@@ -41,24 +41,52 @@ until dirStack.empty?
     puts "First file info:"
     file = TagLib::MPEG::File.new fileList[0]
     tag = file.id3v2_tag
-    puts tag.album
+    albumName = tag.album
+    puts albumName
     file.close
 
-    puts 'What to do - Edit All(e) or Skip(any key) ?'
+    puts 'What to do - Edit All(e) or Check All Files(c) or Skip(any key) ?'
     userInp = STDIN.gets.chomp
-    if not userInp.eql? 'e'
+
+    case userInp
+    when 'e'
+        puts 'Enter new value for Album tag:'
+        albumName = STDIN.gets.chomp
+            
+        fileList.each do |fileName|
+            puts fileName
+            file = TagLib::MPEG::File.new fileName
+            tag = file.id3v2_tag
+            tag.album = albumName
+            file.save
+            file.close
+        end
+
+    when 'c'
+        puts 'Checking if all files have consistent album names:'
+        fileList.each do |fileName|
+            puts fileName
+            file = TagLib::MPEG::File.new fileName
+            tag = file.id3v2_tag
+            if tag.album != albumName
+                puts "#{fileName}'s album differs: #{tag.album} vs #{albumName}. What to do - Overwrite(o) or Give New Name(g) or Skip(any key)?"
+                userInp = STDIN.gets.chomp
+                case userInp
+                when 'o'
+                    tag.album = albumName
+                    file.save
+                when 'g'
+                    puts 'Type in new name:'
+                    newAlbumName = STDIN.gets.chomp
+                    tag.album = newAlbumName
+                    puts "Overwritten with #{newAlbumName}."
+                    file.save
+                end
+                file.close
+            end
+        end
+    else
+        puts 'Skipping current folder.'
         next    
-    end
-    
-    puts 'Enter new value for Album tag:'
-    albumName = STDIN.gets.chomp
-        
-    fileList.each do |fileName|
-        puts fileName
-        file = TagLib::MPEG::File.new fileName
-        tag = file.id3v2_tag
-        tag.album = albumName
-        file.save
-        file.close
     end
 end
